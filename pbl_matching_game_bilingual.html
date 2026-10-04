@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PBL 學習科學復盤連連看 | Learning Sciences Matching Game</title>
+  <style>
+    :root {
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --border-default: #E2E8F0;
+      --primary: #4F46E5;
+      --primary-light: #EEF2FF;
+      --primary-border: #818CF8;
+      --success: #059669;
+      --success-bg: #ECFDF5;
+      --success-border: #34D399;
+      --error: #E11D48;
+      --error-bg: #FFF1F2;
+      --error-border: #FDA4AF;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 8px 20px -4px rgba(79, 70, 229, 0.12);
+      --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Noto Sans TC", sans-serif; }
+    
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 40px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 580px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      width: 100%;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    .header h1 {
+      font-size: 21px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+    .header .subtitle-en {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+    .header p {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .game-board {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .col-header {
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #64748B;
+      text-align: center;
+      padding-bottom: 6px;
+      border-bottom: 1.5px solid var(--border-default);
+    }
+    .col-header span {
+      display: block;
+      font-size: 10.5px;
+      color: #94A3B8;
+      font-weight: 500;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-default);
+      border-radius: 12px;
+      padding: 12px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.35;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      min-height: 78px;
+      box-shadow: var(--shadow-card);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      position: relative;
+    }
+    .card:hover {
+      border-color: #CBD5E1;
+      transform: translateY(-1px);
+    }
+    .card:active {
+      transform: scale(0.98);
+    }
+
+    .card.selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .card.matched {
+      border-color: var(--success-border);
+      background: var(--success-bg);
+      color: var(--success);
+      font-weight: 700;
+      cursor: default;
+      pointer-events: none;
+      box-shadow: none;
+      transform: none;
+    }
+    .card.matched::after {
+      content: "✓";
+      position: absolute;
+      top: 5px;
+      right: 7px;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--success);
+    }
+
+    .card.error {
+      border-color: var(--error-border);
+      background: var(--error-bg);
+      color: var(--error);
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-5px); }
+      40%, 80% { transform: translateX(5px); }
+    }
+
+    .sub-en {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: #64748B;
+      margin-top: 3px;
+      line-height: 1.25;
+    }
+    .card.selected .sub-en { color: #6366F1; }
+    .card.matched .sub-en { color: #059669; }
+
+    .status-panel {
+      margin-top: 18px;
+      width: 100%;
+      background: #FFFFFF;
+      border: 1px solid var(--border-default);
+      border-radius: 14px;
+      padding: 14px 18px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .progress-bar-wrap {
+      width: 100%;
+      height: 6px;
+      background: #E2E8F0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4F46E5, #059669);
+      transition: width 0.35s ease;
+      border-radius: 999px;
+    }
+
+    .status-info {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+    }
+    .hint-txt { color: var(--text-muted); font-weight: 500; }
+    .score-badge {
+      background: #F1F5F9;
+      color: var(--text-main);
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .conclusion {
+      display: none;
+      margin-top: 18px;
+      width: 100%;
+      background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+      border: 1.5px solid #CBD5E1;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      animation: slideUp 0.4s ease;
+    }
+
+    .conclusion-header {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1E293B;
+      margin-bottom: 6px;
+    }
+    .conclusion-sub {
+      font-size: 12px;
+      color: var(--primary);
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .conclusion p {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+
+    .conclusion-highlight {
+      margin-top: 10px;
+      background: #EFF6FF;
+      border-left: 3.5px solid #3B82F6;
+      padding: 12px 14px;
+      border-radius: 0 10px 10px 0;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #1E40AF;
+      line-height: 1.5;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .btn-reset {
+      margin-top: 12px;
+      background: var(--text-main);
+      color: #FFFFFF;
+      border: none;
+      padding: 9px 20px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 12.5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <div class="badge">Learning Sciences Debrief</div>
+      <h1>PBL 學習科學復盤連連看</h1>
+      <div class="subtitle-en">Concept Matching Interactive Game</div>
+      <p>點擊左側「實作步驟」，再點擊右側對應「理論概念」進行配對！<br>
+      <span style="font-size:11.5px; color:#94A3B8;">Click an action on the left, then click its corresponding concept on the right!</span></p>
+    </div>
+
+    <div class="game-board">
+      <div class="column" id="leftCol"></div>
+      <div class="column" id="rightCol"></div>
+    </div>
+
+    <div class="status-panel">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="status-info">
+        <span class="hint-txt" id="hintTxt">請選擇左側動作 / Select an action on the left</span>
+        <span class="score-badge" id="progressTxt">0 / 4</span>
+      </div>
+      <button class="btn-reset" id="resetBtn" style="display:none;" onclick="initGame()">再玩一次 / Play Again ↺</button>
+    </div>
+
+    <div class="conclusion" id="conclusionBox">
+      <div class="conclusion-header">💡 復盤總結：為什麼這樣設計活動？</div>
+      <div class="conclusion-sub">Why Did We Design This Activity This Way?</div>
+      <p>恭喜全數配對成功！/ Congratulations! All matched successfully!</p>
+      <div class="conclusion-highlight">
+        <strong>PBL 不是放牛吃草</strong>，而是由「<strong>真實情境</strong> ＋ <strong>認知鷹架</strong> ＋ <strong>公開製品</strong>」構成的精密認知推進歷程。<br>
+        <span style="font-size:11.5px; font-weight:500; display:block; margin-top:4px;">
+        PBL is not unguided exploration, but a rigorous cognitive journey anchored in <em>Authentic Context + Cognitive Scaffold + Public Artifact</em>.
+        </span>
+        <br>
+        ✦ <strong>教師的角色 (Teacher's Role)：</strong> 不是知識的廣播者，而是學習環境與認知支架的架構師！<br>
+        <span style="font-size:11px; font-weight:500;">(Not a broadcaster of knowledge, but an architect of learning environments and scaffolds.)</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const data = [
+      { 
+        id: 1, 
+        zhLeft: "學餐午餐動線與人流問題", 
+        enLeft: "Cafeteria Lunch Rush Challenge", 
+        zhRight: "情境學習", 
+        enRight: "Situated Learning" 
+      },
+      { 
+        id: 2, 
+        zhLeft: "小組報告的三格填寫結構", 
+        enLeft: "3-Column Thinking Scaffold", 
+        zhRight: "認知鷹架", 
+        enRight: "Cognitive Scaffold" 
+      },
+      { 
+        id: 3, 
+        zhLeft: "小組內的討論與修改", 
+        enLeft: "Team Debate & Negotiation", 
+        zhRight: "社會建構", 
+        enRight: "Social Interaction" 
+      },
+      { 
+        id: 4, 
+        zhLeft: "小組報告的手繪草圖", 
+        enLeft: "Hand-Drawn Routing Sketch", 
+        zhRight: "公開製品", 
+        enRight: "Public Artifact" 
+      }
+    ];
+
+    let selectedLeft = null;
+    let selectedRight = null;
+    let matchedCount = 0;
+
+    function shuffle(arr) {
+      return arr.map(a => [Math.random(), a]).sort((a, b) => a[0] - b[0]).map(a => a[1]);
+    }
+
+    function initGame() {
+      matchedCount = 0;
+      selectedLeft = null;
+      selectedRight = null;
+      document.getElementById('progressBar').style.width = "0%";
+      document.getElementById('progressTxt').textContent = "0 / 4";
+      document.getElementById('hintTxt').textContent = "請選擇左側動作 / Select an action on the left";
+      document.getElementById('conclusionBox').style.display = "none";
+      document.getElementById('resetBtn').style.display = "none";
+
+      const leftCol = document.getElementById('leftCol');
+      const rightCol = document.getElementById('rightCol');
+
+      leftCol.innerHTML = '<div class="col-header">剛才體驗的動作<span>Workshop Actions</span></div>';
+      rightCol.innerHTML = '<div class="col-header">學習科學概念<span>Theoretical Concepts</span></div>';
+
+      const shuffledLeft = shuffle([...data]);
+      const shuffledRight = shuffle([...data]);
+
+      shuffledLeft.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.dataset.id = item.id;
+        div.innerHTML = `<span>${item.zhLeft}</span><span class="sub-en">${item.enLeft}</span>`;
+        div.onclick = () => selectCard('left', div);
+        leftCol.appendChild(div);
+      });
+
+      shuffledRight.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.dataset.id = item.id;
+        div.innerHTML = `<span>${item.zhRight}</span><span class="sub-en">${item.enRight}</span>`;
+        div.onclick = () => selectCard('right', div);
+        rightCol.appendChild(div);
+      });
+    }
+
+    function selectCard(side, cardEl) {
+      if (cardEl.classList.contains('matched')) return;
+
+      if (side === 'left') {
+        if (selectedLeft) selectedLeft.classList.remove('selected');
+        selectedLeft = cardEl;
+        cardEl.classList.add('selected');
+        document.getElementById('hintTxt').textContent = "現在點選右側概念 / Select corresponding theory";
+      } else {
+        if (!selectedLeft) {
+          document.getElementById('hintTxt').textContent = "請先點選左側動作 / Select left action first!";
+          return;
+        }
+        selectedRight = cardEl;
+        cardEl.classList.add('selected');
+        checkMatch();
+      }
+    }
+
+    function checkMatch() {
+      const leftId = selectedLeft.dataset.id;
+      const rightId = selectedRight.dataset.id;
+
+      if (leftId === rightId) {
+        selectedLeft.classList.remove('selected');
+        selectedRight.classList.remove('selected');
+        selectedLeft.classList.add('matched');
+        selectedRight.classList.add('matched');
+        matchedCount++;
+
+        const pct = (matchedCount / 4) * 100;
+        document.getElementById('progressBar').style.width = pct + "%";
+        document.getElementById('progressTxt').textContent = `${matchedCount} / 4`;
+        document.getElementById('hintTxt').textContent = "✓ 配對成功！/ Matched successfully!";
+        selectedLeft = null;
+        selectedRight = null;
+
+        if (matchedCount === 4) {
+          document.getElementById('hintTxt').textContent = "✨ 全部完成！/ All matched!";
+          document.getElementById('conclusionBox').style.display = "block";
+          document.getElementById('resetBtn').style.display = "inline-block";
+        }
+      } else {
+        const l = selectedLeft;
+        const r = selectedRight;
+        l.classList.add('error');
+        r.classList.add('error');
+        document.getElementById('hintTxt').textContent = "✕ 配對不符，再試一次 / Try again!";
+        setTimeout(() => {
+          l.classList.remove('error', 'selected');
+          r.classList.remove('error', 'selected');
+        }, 450);
+        selectedLeft = null;
+        selectedRight = null;
+      }
+    }
+
+    initGame();
+  </script>
+</body>
+</html>
